@@ -7,10 +7,9 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/axcydn/evio"
 	"log"
 	"strings"
-
-	"github.com/tidwall/evio"
 )
 
 func main() {
@@ -31,6 +30,7 @@ func main() {
 
 	var events evio.Events
 	events.NumLoops = loops
+	events.LoadBalance = evio.RoundRobin
 	events.Serving = func(srv evio.Server) (action evio.Action) {
 		log.Printf("echo server started on port %d (loops: %d)", port, srv.NumLoops)
 		if reuseport {
@@ -48,6 +48,18 @@ func main() {
 		out = in
 		return
 	}
+	events.Opened = func(c evio.Conn) (out []byte, opts evio.Options, action evio.Action) {
+		out = []byte("Welcome\n")
+		return
+	}
+	events.Closed = func(c evio.Conn, err error) (action evio.Action) {
+		log.Printf("%v exit", c.RemoteAddr())
+		action = evio.Close
+		return
+	}
+	events.PreWrite = func() {
+		log.Printf("Write")
+	}
 	scheme := "tcp"
 	if udp {
 		scheme = "udp"
@@ -55,5 +67,6 @@ func main() {
 	if stdlib {
 		scheme += "-net"
 	}
-	log.Fatal(evio.Serve(events, fmt.Sprintf("%s://:%d?reuseport=%t", scheme, port, reuseport)))
+	log.Fatal(evio.Serve(events, fmt.Sprintf("%s://:%d?reuseport=%t", scheme, port, reuseport),
+		fmt.Sprintf("%s://:%d?reuseport=%t", scheme, port+1, reuseport)))
 }

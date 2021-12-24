@@ -2,6 +2,7 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
+//go:build darwin || netbsd || freebsd || openbsd || dragonfly || linux
 // +build darwin netbsd freebsd openbsd dragonfly linux
 
 package evio
@@ -16,8 +17,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/axcydn/evio/internal"
 	reuseport "github.com/kavu/go_reuseport"
-	"github.com/tidwall/evio/internal"
 )
 
 type conn struct {
